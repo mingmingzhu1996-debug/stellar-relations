@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="星际关系 - 星空关系图谱">
+    <title>星空关系图谱 | Stellar Relations</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/animations.css">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: var(--font-primary);
+            background: linear-gradient(180deg, var(--color-bg-gradient-start) 0%, var(--color-bg-gradient-end) 100%);
+            color: var(--color-text-primary);
+        }
+
+        #starfield-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: var(--z-background);
+        }
+
+        #graph-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: var(--z-base);
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: var(--spacing-m);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: var(--z-sticky);
+            background: linear-gradient(to bottom, var(--color-bg-primary), transparent);
+        }
+
+        .back-button {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-s) var(--spacing-m);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-s);
+            color: var(--color-text-primary);
+            font-size: var(--font-size-body);
+            cursor: pointer;
+            transition: all var(--duration-fast) var(--ease-out);
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            transform: translateX(-4px);
+            border-color: var(--color-brand-purple);
+        }
+
+        .title {
+            font-size: var(--font-size-h3);
+            font-weight: var(--font-weight-bold);
+            background: linear-gradient(135deg, var(--color-brand-purple), var(--color-luna-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .info-panel {
+            position: fixed;
+            bottom: var(--spacing-m);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: var(--z-sticky);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-m);
+            padding: var(--spacing-m);
+            max-width: 400px;
+            width: calc(100% - var(--spacing-l) * 2);
+            box-shadow: var(--shadow-elevated);
+        }
+
+        .node-info {
+            display: none;
+        }
+
+        .node-info.active {
+            display: block;
+        }
+
+        .node-name {
+            font-size: var(--font-size-h4);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .node-details {
+            font-size: var(--font-size-caption);
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+        }
+
+        .legend {
+            position: fixed;
+            top: 100px;
+            right: var(--spacing-m);
+            z-index: var(--z-sticky);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-m);
+            padding: var(--spacing-m);
+            box-shadow: var(--shadow-elevated);
+        }
+
+        .legend-title {
+            font-size: var(--font-size-body);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--spacing-s);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-s);
+            margin-bottom: var(--spacing-xs);
+            font-size: var(--font-size-caption);
+        }
+
+        .legend-icon {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .default-message {
+            text-align: center;
+            padding: var(--spacing-l);
+            color: var(--color-text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .legend {
+                top: 80px;
+                right: var(--spacing-s);
+                padding: var(--spacing-s);
+            }
+
+            .legend-title {
+                font-size: var(--font-size-caption);
+            }
+
+            .legend-item {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 星空背景 -->
+    <canvas id="starfield-canvas"></canvas>
+
+    <!-- 关系图谱Canvas -->
+    <canvas id="graph-canvas"></canvas>
+
+    <!-- 顶部栏 -->
+    <div class="header">
+        <a href="index.html" class="back-button">
+            <span>←</span>
+            <span>返回</span>
+        </a>
+        <div class="title">星空关系图谱</div>
+        <div style="width: 80px;"></div> <!-- 占位符保持居中 -->
+    </div>
+
+    <!-- 图例 -->
+    <div class="legend">
+        <div class="legend-title">关系类型</div>
+        <div class="legend-item">
+            <div class="legend-icon" style="background: var(--color-luna-pink);"></div>
+            <span>恋爱关系</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-icon" style="background: var(--color-atlas-blue);"></div>
+            <span>职场关系</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-icon" style="background: var(--color-ceres-green);"></div>
+            <span>家庭关系</span>
+        </div>
+        <div class="legend-item">
+            <div class="legend-icon" style="background: var(--color-moon-silver);"></div>
+            <span>友谊关系</span>
+        </div>
+    </div>
+
+    <!-- 信息面板 -->
+    <div class="info-panel">
+        <div class="node-info" id="nodeInfo">
+            <div class="node-name" id="nodeName"></div>
+            <div class="node-details" id="nodeDetails"></div>
+        </div>
+        <div class="default-message" id="defaultMessage">
+            点击节点查看关系详情
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/components/starfield.js"></script>
+    <script src="js/components/relationship-graph.js"></script>
+
+    <script>
+        // 初始化星空背景
+        const canvas = document.getElementById('starfield-canvas');
+        const starfield = new StarField(canvas, {
+            starCount: 500, // 减少星星数量，不干扰图谱
+            minSize: 0.3,
+            maxSize: 1.5
+        });
+        starfield.start();
+
+        // 初始化关系图谱
+        const graphCanvas = document.getElementById('graph-canvas');
+        const relationGraph = new RelationshipGraph(graphCanvas);
+
+        // 示例数据：创建关系图谱
+        const sampleData = {
+            nodes: [
+                { id: 'me', name: '你', type: 'self', x: 0.5, y: 0.5 },
+                { id: 'partner', name: 'TA', type: 'love', x: 0.3, y: 0.3 },
+                { id: 'boss', name: '上司', type: 'work', x: 0.7, y: 0.3 },
+                { id: 'parent', name: '父母', type: 'family', x: 0.3, y: 0.7 },
+                { id: 'friend', name: '好友', type: 'friend', x: 0.7, y: 0.7 }
+            ],
+            connections: [
+                { from: 'me', to: 'partner', strength: 0.9, type: 'love' },
+                { from: 'me', to: 'boss', strength: 0.6, type: 'work' },
+                { from: 'me', to: 'parent', strength: 0.8, type: 'family' },
+                { from: 'me', to: 'friend', strength: 0.7, type: 'friend' }
+            ]
+        };
+
+        relationGraph.setData(sampleData);
+        relationGraph.start();
+
+        // 节点点击事件
+        relationGraph.on('nodeClick', (node) => {
+            const nodeInfo = document.getElementById('nodeInfo');
+            const defaultMessage = document.getElementById('defaultMessage');
+            const nodeName = document.getElementById('nodeName');
+            const nodeDetails = document.getElementById('nodeDetails');
+
+            defaultMessage.style.display = 'none';
+            nodeInfo.classList.add('active');
+
+            nodeName.textContent = node.name;
+
+            const typeNames = {
+                'self': '自己',
+                'love': '恋爱关系',
+                'work': '职场关系',
+                'family': '家庭关系',
+                'friend': '友谊关系'
+            };
+
+            const details = [
+                `类型：${typeNames[node.type] || '未知'}`,
+                `位置：第${Math.floor(Math.random() * 12) + 1}宫`,
+                `相位：${['合相', '三分相', '六分相', '对冲'][Math.floor(Math.random() * 4)]}`,
+                `影响力：${Math.floor(Math.random() * 30 + 70)}%`
+            ];
+
+            nodeDetails.innerHTML = details.join('<br>');
+        });
+
+        // 响应式
+        window.addEventListener('resize', () => {
+            starfield.resize();
+            relationGraph.resize();
+        });
+    </script>
+</body>
+</html>

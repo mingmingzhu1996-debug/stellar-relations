@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="星际关系 - AI占星应用">
+    <title>星际关系 | Stellar Relations</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/animations.css">
+    
+    <style>
+        /* 页面特定样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: var(--font-primary);
+            background: linear-gradient(180deg, var(--color-bg-gradient-start) 0%, var(--color-bg-gradient-end) 100%);
+            color: var(--color-text-primary);
+        }
+
+        #starfield-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: var(--z-background);
+        }
+
+        .main-container {
+            position: relative;
+            z-index: var(--z-base);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-l);
+            padding-top: 100px; /* 为AI切换栏留空间 */
+        }
+
+        /* AI切换栏 */
+        .ai-switcher {
+            position: fixed;
+            top: var(--spacing-m);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: var(--z-sticky);
+            display: flex;
+            gap: var(--spacing-s);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-m);
+            padding: var(--spacing-xs);
+            box-shadow: var(--shadow-elevated);
+        }
+
+        .ai-tab {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--spacing-xxs);
+            padding: var(--spacing-s) var(--spacing-m);
+            border-radius: var(--radius-s);
+            cursor: pointer;
+            transition: all var(--duration-normal) var(--ease-out);
+            background: transparent;
+            border: 2px solid transparent;
+            min-width: 80px;
+        }
+
+        .ai-tab-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all var(--duration-normal) var(--ease-out);
+        }
+
+        .ai-tab-name {
+            font-size: var(--font-size-caption);
+            font-weight: var(--font-weight-semibold);
+            transition: all var(--duration-normal) var(--ease-out);
+        }
+
+        .ai-tab-specialty {
+            font-size: 10px;
+            color: var(--color-text-tertiary);
+            text-align: center;
+            line-height: 1.2;
+            opacity: 0;
+            max-height: 0;
+            overflow: hidden;
+            transition: all var(--duration-normal) var(--ease-out);
+        }
+
+        /* Luna样式 */
+        .ai-tab.luna .ai-tab-avatar {
+            background: linear-gradient(135deg, var(--color-luna-pink), #FF8DB3);
+            border: 2px solid var(--color-luna-pink);
+        }
+        .ai-tab.luna .ai-tab-name {
+            color: var(--color-luna-pink);
+        }
+        .ai-tab.luna.active {
+            background: rgba(255, 107, 157, 0.1);
+            border-color: var(--color-luna-pink);
+        }
+        .ai-tab.luna.active .ai-tab-avatar {
+            box-shadow: var(--shadow-glow-luna);
+            transform: scale(1.1);
+        }
+
+        /* Atlas样式 */
+        .ai-tab.atlas .ai-tab-avatar {
+            background: linear-gradient(135deg, var(--color-atlas-blue), #6BB5FF);
+            border: 2px solid var(--color-atlas-blue);
+        }
+        .ai-tab.atlas .ai-tab-name {
+            color: var(--color-atlas-blue);
+        }
+        .ai-tab.atlas.active {
+            background: rgba(78, 159, 255, 0.1);
+            border-color: var(--color-atlas-blue);
+        }
+        .ai-tab.atlas.active .ai-tab-avatar {
+            box-shadow: var(--shadow-glow-atlas);
+            transform: scale(1.1);
+        }
+
+        /* Ceres样式 */
+        .ai-tab.ceres .ai-tab-avatar {
+            background: linear-gradient(135deg, var(--color-ceres-green), #1AEDC7);
+            border: 2px solid var(--color-ceres-green);
+        }
+        .ai-tab.ceres .ai-tab-name {
+            color: var(--color-ceres-green);
+        }
+        .ai-tab.ceres.active {
+            background: rgba(0, 212, 170, 0.1);
+            border-color: var(--color-ceres-green);
+        }
+        .ai-tab.ceres.active .ai-tab-avatar {
+            box-shadow: var(--shadow-glow-ceres);
+            transform: scale(1.1);
+        }
+
+        .ai-tab.active .ai-tab-specialty {
+            opacity: 1;
+            max-height: 30px;
+            margin-top: var(--spacing-xxs);
+        }
+
+        .ai-tab:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        /* 快捷菜单按钮 */
+        .quick-menu-btn {
+            position: fixed;
+            top: var(--spacing-m);
+            right: var(--spacing-m);
+            z-index: var(--z-modal);
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            box-shadow: var(--shadow-elevated);
+            cursor: pointer;
+            transition: all var(--duration-normal) var(--ease-out);
+            text-decoration: none;
+            font-size: 24px;
+        }
+
+        .quick-menu-btn:hover {
+            transform: scale(1.1) rotate(15deg);
+            border-color: var(--color-brand-purple);
+            box-shadow: var(--shadow-glow-brand);
+        }
+
+        /* 移动端响应式 */
+        @media (max-width: 768px) {
+            .ai-switcher {
+                top: var(--spacing-xs);
+                gap: var(--spacing-xxs);
+                padding: 4px;
+            }
+
+            .ai-tab {
+                padding: var(--spacing-xs) var(--spacing-s);
+                min-width: 70px;
+            }
+
+            .ai-tab-avatar {
+                width: 32px;
+                height: 32px;
+                font-size: 16px;
+            }
+
+            .ai-tab-name {
+                font-size: 11px;
+            }
+
+            .ai-tab-specialty {
+                font-size: 9px;
+            }
+
+            .main-container {
+                padding: var(--spacing-s);
+                padding-top: 80px;
+            }
+
+            .chat-container {
+                max-height: 70vh;
+            }
+
+            .input-container {
+                padding: var(--spacing-s);
+            }
+
+            .message-input {
+                font-size: 14px;
+            }
+
+            .send-button {
+                padding: var(--spacing-xs) var(--spacing-m);
+                font-size: 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .ai-switcher {
+                width: calc(100% - var(--spacing-m));
+                max-width: 340px;
+            }
+
+            .ai-tab {
+                flex: 1;
+                min-width: auto;
+            }
+
+            .chat-container {
+                max-height: 65vh;
+                padding: var(--spacing-s);
+            }
+
+            .ai-avatar {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+
+            .ai-message-content,
+            .user-message-content {
+                font-size: 14px;
+                padding: var(--spacing-s);
+            }
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 500px;
+            max-height: 65vh;
+            overflow-y: auto;
+            padding: var(--spacing-m);
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-brand-purple) transparent;
+        }
+
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: var(--color-brand-purple);
+            border-radius: var(--radius-round);
+        }
+
+        .message {
+            margin-bottom: var(--spacing-l);
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        .ai-message {
+            display: flex;
+            gap: var(--spacing-s);
+            align-items: flex-start;
+        }
+
+        .ai-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* Luna头像样式 */
+        .ai-avatar-luna {
+            background: linear-gradient(135deg, var(--color-luna-pink), #FF8DB3);
+            border: 2px solid var(--color-luna-pink);
+            box-shadow: var(--shadow-glow-luna);
+        }
+
+        /* Atlas头像样式 */
+        .ai-avatar-atlas {
+            background: linear-gradient(135deg, var(--color-atlas-blue), #6BB5FF);
+            border: 2px solid var(--color-atlas-blue);
+            box-shadow: var(--shadow-glow-atlas);
+        }
+
+        /* Ceres头像样式 */
+        .ai-avatar-ceres {
+            background: linear-gradient(135deg, var(--color-ceres-green), #1AEDC7);
+            border: 2px solid var(--color-ceres-green);
+            box-shadow: var(--shadow-glow-ceres);
+        }
+
+        .user-message {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: var(--spacing-l);
+        }
+
+        .user-message-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-m) var(--radius-m) var(--radius-xs) var(--radius-m);
+            padding: var(--spacing-m);
+            max-width: 80%;
+            box-shadow: var(--shadow-standard);
+            color: var(--color-text-primary);
+            font-size: var(--font-size-body);
+            line-height: var(--line-height-body);
+        }
+
+        .ai-message-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-m) var(--radius-m) var(--radius-m) var(--radius-xs);
+            padding: var(--spacing-m);
+            max-width: 80%;
+            box-shadow: var(--shadow-standard);
+            color: var(--color-text-primary);
+            font-size: var(--font-size-body);
+            line-height: var(--line-height-body);
+        }
+
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+            padding: var(--spacing-s) 0;
+        }
+
+        .loading-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--color-moon-silver);
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+
+        .loading-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .loading-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        .input-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: var(--spacing-m);
+            background: linear-gradient(to top, var(--color-bg-primary), transparent);
+            z-index: var(--z-sticky);
+        }
+
+        .input-wrapper {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            gap: var(--spacing-s);
+        }
+
+        .message-input {
+            flex: 1;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-s);
+            padding: var(--spacing-s) var(--spacing-m);
+            font-size: var(--font-size-body);
+            color: var(--color-text-primary);
+            font-family: var(--font-primary);
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: var(--color-brand-purple);
+            box-shadow: var(--shadow-glow-brand);
+        }
+
+        .message-input::placeholder {
+            color: var(--color-text-tertiary);
+        }
+
+        .send-button {
+            padding: var(--spacing-s) var(--spacing-l);
+            background: linear-gradient(135deg, var(--color-brand-purple), var(--color-brand-purple-light));
+            border: none;
+            border-radius: var(--radius-s);
+            color: var(--color-text-primary);
+            font-size: var(--font-size-body);
+            font-weight: var(--font-weight-semibold);
+            cursor: pointer;
+            transition: transform var(--duration-fast) var(--ease-out);
+        }
+
+        .send-button:hover {
+            transform: scale(1.05);
+        }
+
+        .send-button:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 星空背景 -->
+    <canvas id="starfield-canvas"></canvas>
+
+    <!-- AI切换栏 -->
+    <div class="ai-switcher">
+        <div class="ai-tab luna active" data-ai="luna">
+            <div class="ai-tab-avatar">💕</div>
+            <div class="ai-tab-name">Luna</div>
+            <div class="ai-tab-specialty">恋爱占星师</div>
+        </div>
+        <div class="ai-tab atlas" data-ai="atlas">
+            <div class="ai-tab-avatar">💼</div>
+            <div class="ai-tab-name">Atlas</div>
+            <div class="ai-tab-specialty">职场占星师</div>
+        </div>
+        <div class="ai-tab ceres" data-ai="ceres">
+            <div class="ai-tab-avatar">🏡</div>
+            <div class="ai-tab-name">Ceres</div>
+            <div class="ai-tab-specialty">家庭占星师</div>
+        </div>
+    </div>
+
+    <!-- 快捷菜单按钮 -->
+    <a href="starmap.html" class="quick-menu-btn" style="top: calc(var(--spacing-m) + 60px);" title="查看星空关系图谱">
+        <span>🌌</span>
+    </a>
+
+    <a href="synastry.html" class="quick-menu-btn" style="top: calc(var(--spacing-m) + 120px);" title="合盘分析">
+        <span>💕</span>
+    </a>
+
+    <!-- 主容器 -->
+    <div class="main-container">
+        <div class="chat-container" id="chatContainer">
+            <!-- AI消息将动态添加到这里 -->
+        </div>
+    </div>
+
+    <!-- 输入框（初始隐藏，Luna引导后显示） -->
+    <div class="input-container" id="inputContainer" style="display: none;">
+        <div class="input-wrapper">
+            <input 
+                type="text" 
+                class="message-input" 
+                id="messageInput"
+                placeholder="输入你的回复..."
+                autocomplete="off"
+            >
+            <button class="send-button" id="sendButton">发送</button>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/utils/storage.js"></script>
+    <script src="js/components/starfield.js"></script>
+    <script src="js/components/ai-chat.js"></script>
+    <script src="js/data/ai-personas.js"></script>
+    
+    <script>
+        // 初始化星空背景
+        const canvas = document.getElementById('starfield-canvas');
+        const starfield = new StarField(canvas);
+        starfield.start();
+
+        // 初始化存储管理器
+        const storage = window.storage;
+
+        // 初始化AI对话（自动加载历史）
+        const aiChat = new AIChat('chatContainer', { enableStorage: true });
+        const aiGenerator = new AIResponseGenerator();
+
+        // 恢复上次的AI或使用默认Luna
+        let currentAI = storage.loadCurrentAI();
+        aiGenerator.setAI(currentAI);
+
+        // 更新AI切换栏UI
+        function updateAITabs() {
+            const tabs = document.querySelectorAll('.ai-tab');
+            tabs.forEach(tab => {
+                if (tab.dataset.ai === currentAI) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+        }
+
+        // AI切换功能
+        function initAISwitcher() {
+            const tabs = document.querySelectorAll('.ai-tab');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', async () => {
+                    const aiName = tab.dataset.ai;
+
+                    // 如果点击的是当前AI，不做任何操作
+                    if (aiName === currentAI) return;
+
+                    // 更新UI
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // 切换AI
+                    currentAI = aiName;
+                    aiGenerator.setAI(aiName);
+                    storage.saveCurrentAI(aiName); // 保存当前AI
+
+                    // AI主动打招呼
+                    aiChat.showTypingIndicator(aiName);
+                    await sleep(800);
+                    aiChat.hideTypingIndicator();
+
+                    const greeting = aiGenerator.getGreeting();
+                    await aiChat.addAIMessage(aiName, greeting);
+
+                    // 显示输入框（如果还没显示）
+                    document.getElementById('inputContainer').style.display = 'block';
+                });
+            });
+        }
+
+        // Luna引导流程
+        async function startLunaOnboarding() {
+            // 检查是否已完成引导
+            if (storage.isOnboardingDone()) {
+                // 已完成引导，直接显示输入框
+                document.getElementById('inputContainer').style.display = 'block';
+                return;
+            }
+
+            // 延迟1秒后Luna开始说话
+            await sleep(1000);
+
+            await aiChat.addAIMessage('luna', '嗨！✨ 我是Luna，很高兴认识你～');
+            await sleep(1500);
+
+            await aiChat.addAIMessage('luna', '我是你的恋爱占星师。在我们开始之前，我想先了解一下你的星盘...');
+            await sleep(2000);
+
+            await aiChat.addAIMessage('luna', '你的出生日期是？\n（这样我能更准确地帮助你💫）');
+
+            // 显示输入框
+            document.getElementById('inputContainer').style.display = 'block';
+
+            // 标记引导已完成
+            storage.setOnboardingDone(true);
+        }
+
+        // 工具函数：延迟
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 处理用户输入
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        async function sendMessage() {
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            // 添加用户消息
+            aiChat.addUserMessage(message);
+
+            // 清空输入框
+            messageInput.value = '';
+
+            // AI回复
+            aiChat.showTypingIndicator(currentAI);
+            await sleep(1000 + Math.random() * 1000);
+            aiChat.hideTypingIndicator();
+
+            // 生成回复
+            const response = aiGenerator.generateResponse(message);
+            await aiChat.addAIMessage(currentAI, response);
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // 初始化AI切换器并更新UI
+        initAISwitcher();
+        updateAITabs();
+
+        // 启动Luna引导流程（首次访问）
+        startLunaOnboarding();
+
+        // 响应式调整canvas大小
+        window.addEventListener('resize', () => {
+            starfield.resize();
+        });
+
+        // 添加清空对话按钮功能（调试用，可选）
+        window.clearChat = function() {
+            if (confirm('确定要清空所有对话记录吗？')) {
+                storage.clearAll();
+                location.reload();
+            }
+        };
+    </script>
+</body>
+</html>

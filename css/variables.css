@@ -1,0 +1,113 @@
+/**
+ * 星际关系 - 设计系统变量
+ * 深空占星美学主题
+ */
+
+:root {
+  /* ==================== 颜色系统 ==================== */
+
+  /* 主色 - 星夜紫 */
+  --primary-color: #6B4FE0;
+  --primary-light: #8B6FFF;
+  --primary-dark: #4B2FC0;
+  --primary-glow: rgba(107, 79, 224, 0.3);
+
+  /* 背景 - 深空渐变 */
+  --bg-dark-start: #1A1B3D;
+  --bg-dark-end: #2D1B4E;
+  --bg-overlay: rgba(26, 27, 61, 0.8);
+
+  /* AI角色色彩 */
+  --luna-color: #FF6B9D;          /* Luna - 温暖粉 */
+  --luna-glow: rgba(255, 107, 157, 0.3);
+  --atlas-color: #4E9FFF;         /* Atlas - 理性蓝 */
+  --atlas-glow: rgba(78, 159, 255, 0.3);
+  --ceres-color: #00D4AA;         /* Ceres - 治愈绿 */
+  --ceres-glow: rgba(0, 212, 170, 0.3);
+
+  /* 中性色 */
+  --white: #FFFFFF;
+  --text-primary: rgba(255, 255, 255, 0.95);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-disabled: rgba(255, 255, 255, 0.4);
+
+  /* 功能色 */
+  --success: #00D4AA;
+  --warning: #FFB84D;
+  --error: #FF6B6B;
+  --info: #4E9FFF;
+
+  /* 毛玻璃效果 */
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* ==================== 字体系统 ==================== */
+
+  --font-family-base: -apple-system, BlinkMacSystemFont, "PingFang SC",
+                      "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+  --font-family-mono: "SF Mono", Consolas, Monaco, monospace;
+
+  /* 字体大小 */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+  --font-size-3xl: 48px;
+
+  /* 字重 */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* 行高 */
+  --line-height-tight: 1.2;
+  --line-height-base: 1.6;
+  --line-height-loose: 1.8;
+
+  /* ==================== 间距系统（8px网格） ==================== */
+
+  --spacing-1: 8px;
+  --spacing-2: 16px;
+  --spacing-3: 24px;
+  --spacing-4: 32px;
+  --spacing-5: 40px;
+  --spacing-6: 48px;
+  --spacing-8: 64px;
+  --spacing-10: 80px;
+
+  /* ==================== 圆角系统 ==================== */
+
+  --radius-sm: 8px;
+  --radius-base: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* ==================== 动画系统 ==================== */
+
+  --duration-fast: 150ms;
+  --duration-base: 300ms;
+  --duration-slow: 500ms;
+
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* ==================== 响应式断点 ==================== */
+
+  --breakpoint-mobile: 480px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1024px;
+  --breakpoint-wide: 1440px;
+
+  /* ==================== Z-index层级 ==================== */
+
+  --z-starfield: 0;
+  --z-content: 10;
+  --z-modal: 100;
+  --z-toast: 1000;
+}

@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="星际关系 - 合盘分析">
+    <title>合盘分析 | Stellar Relations</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/common.css">
+    <link rel="stylesheet" href="css/animations.css">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+            font-family: var(--font-primary);
+            background: linear-gradient(180deg, var(--color-bg-gradient-start) 0%, var(--color-bg-gradient-end) 100%);
+            color: var(--color-text-primary);
+            min-height: 100vh;
+        }
+
+        #starfield-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: var(--z-background);
+        }
+
+        .container {
+            position: relative;
+            z-index: var(--z-base);
+            max-width: 800px;
+            margin: 0 auto;
+            padding: var(--spacing-l);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-l);
+        }
+
+        .back-button {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-s) var(--spacing-m);
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-s);
+            color: var(--color-text-primary);
+            font-size: var(--font-size-body);
+            cursor: pointer;
+            transition: all var(--duration-fast) var(--ease-out);
+            text-decoration: none;
+        }
+
+        .back-button:hover {
+            transform: translateX(-4px);
+            border-color: var(--color-brand-purple);
+        }
+
+        .page-title {
+            font-size: var(--font-size-h2);
+            font-weight: var(--font-weight-bold);
+            background: linear-gradient(135deg, var(--color-brand-purple), var(--color-luna-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-m);
+            padding: var(--spacing-l);
+            margin-bottom: var(--spacing-m);
+            box-shadow: var(--shadow-elevated);
+        }
+
+        .card-title {
+            font-size: var(--font-size-h4);
+            font-weight: var(--font-weight-semibold);
+            margin-bottom: var(--spacing-m);
+            color: var(--color-text-primary);
+        }
+
+        .person-input {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--spacing-m);
+            margin-bottom: var(--spacing-m);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-xs);
+        }
+
+        .input-label {
+            font-size: var(--font-size-caption);
+            color: var(--color-text-secondary);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .input-field {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-s);
+            padding: var(--spacing-s) var(--spacing-m);
+            color: var(--color-text-primary);
+            font-size: var(--font-size-body);
+            font-family: var(--font-primary);
+            transition: all var(--duration-fast) var(--ease-out);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--color-brand-purple);
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .input-field::placeholder {
+            color: var(--color-text-tertiary);
+        }
+
+        .analyze-button {
+            width: 100%;
+            padding: var(--spacing-m);
+            background: linear-gradient(135deg, var(--color-brand-purple), var(--color-brand-purple-light));
+            border: none;
+            border-radius: var(--radius-s);
+            color: var(--color-text-primary);
+            font-size: var(--font-size-body);
+            font-weight: var(--font-weight-semibold);
+            cursor: pointer;
+            transition: all var(--duration-fast) var(--ease-out);
+            box-shadow: var(--shadow-glow-brand);
+        }
+
+        .analyze-button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-glow-brand), var(--shadow-elevated);
+        }
+
+        .analyze-button:active {
+            transform: translateY(0);
+        }
+
+        .analyze-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-section {
+            display: none;
+        }
+
+        .result-section.active {
+            display: block;
+        }
+
+        .compatibility-score {
+            text-align: center;
+            padding: var(--spacing-l);
+            margin-bottom: var(--spacing-l);
+        }
+
+        .score-circle {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto var(--spacing-m);
+            position: relative;
+        }
+
+        .score-number {
+            font-size: var(--font-size-h1);
+            font-weight: var(--font-weight-bold);
+            background: linear-gradient(135deg, var(--color-luna-pink), var(--color-brand-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .score-label {
+            font-size: var(--font-size-body);
+            color: var(--color-text-secondary);
+            margin-top: var(--spacing-xs);
+        }
+
+        .aspect-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-m);
+            margin-bottom: var(--spacing-m);
+        }
+
+        .aspect-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-s);
+            padding: var(--spacing-m);
+        }
+
+        .aspect-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-s);
+            margin-bottom: var(--spacing-s);
+        }
+
+        .aspect-icon {
+            font-size: 24px;
+        }
+
+        .aspect-title {
+            font-size: var(--font-size-body);
+            font-weight: var(--font-weight-semibold);
+        }
+
+        .aspect-content {
+            font-size: var(--font-size-caption);
+            color: var(--color-text-secondary);
+            line-height: 1.6;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-round);
+            overflow: hidden;
+            margin-top: var(--spacing-xs);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--color-luna-pink), var(--color-brand-purple));
+            border-radius: var(--radius-round);
+            transition: width 1s var(--ease-out);
+        }
+
+        .loading {
+            text-align: center;
+            padding: var(--spacing-xl);
+            display: none;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            margin: 0 auto var(--spacing-m);
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--color-brand-purple);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: var(--color-text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--spacing-m);
+            }
+
+            .person-input {
+                grid-template-columns: 1fr;
+            }
+
+            .page-title {
+                font-size: var(--font-size-h3);
+            }
+
+            .score-circle {
+                width: 120px;
+                height: 120px;
+            }
+
+            .score-number {
+                font-size: var(--font-size-h2);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 星空背景 -->
+    <canvas id="starfield-canvas"></canvas>
+
+    <div class="container">
+        <!-- 顶部栏 -->
+        <div class="header">
+            <a href="index.html" class="back-button">
+                <span>←</span>
+                <span>返回</span>
+            </a>
+            <h1 class="page-title">合盘分析</h1>
+            <div style="width: 80px;"></div>
+        </div>
+
+        <!-- 输入卡片 -->
+        <div class="card">
+            <h2 class="card-title">输入双方信息</h2>
+
+            <div class="person-input">
+                <div class="input-group">
+                    <label class="input-label">你的姓名</label>
+                    <input type="text" class="input-field" id="name1" placeholder="例如：小美">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">TA的姓名</label>
+                    <input type="text" class="input-field" id="name2" placeholder="例如：小明">
+                </div>
+            </div>
+
+            <div class="person-input">
+                <div class="input-group">
+                    <label class="input-label">你的出生日期</label>
+                    <input type="date" class="input-field" id="birth1">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">TA的出生日期</label>
+                    <input type="date" class="input-field" id="birth2">
+                </div>
+            </div>
+
+            <div class="person-input">
+                <div class="input-group">
+                    <label class="input-label">你的出生时间（可选）</label>
+                    <input type="time" class="input-field" id="time1">
+                </div>
+                <div class="input-group">
+                    <label class="input-label">TA的出生时间（可选）</label>
+                    <input type="time" class="input-field" id="time2">
+                </div>
+            </div>
+
+            <button class="analyze-button" id="analyzeBtn">开始分析</button>
+        </div>
+
+        <!-- 加载中 -->
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">正在分析你们的星盘配置...</div>
+        </div>
+
+        <!-- 结果展示 -->
+        <div class="result-section" id="resultSection">
+            <!-- 契合度分数 -->
+            <div class="card">
+                <div class="compatibility-score">
+                    <div class="score-circle">
+                        <canvas id="scoreCanvas" width="150" height="150"></canvas>
+                    </div>
+                    <div class="score-number" id="scoreNumber">--</div>
+                    <div class="score-label">契合度指数</div>
+                </div>
+            </div>
+
+            <!-- 各维度分析 -->
+            <div class="card">
+                <h2 class="card-title">多维度分析</h2>
+                <div class="aspect-grid" id="aspectGrid">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+
+            <!-- AI建议 -->
+            <div class="card">
+                <h2 class="card-title">💕 Luna的建议</h2>
+                <div class="aspect-content" id="aiAdvice">
+                    <!-- 动态生成 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/components/starfield.js"></script>
+    <script src="js/utils/synastry-analyzer.js"></script>
+
+    <script>
+        // 初始化星空背景
+        const canvas = document.getElementById('starfield-canvas');
+        const starfield = new StarField(canvas);
+        starfield.start();
+
+        // 初始化合盘分析器
+        const analyzer = new SynastryAnalyzer();
+
+        // 分析按钮点击事件
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            const name1 = document.getElementById('name1').value.trim();
+            const name2 = document.getElementById('name2').value.trim();
+            const birth1 = document.getElementById('birth1').value;
+            const birth2 = document.getElementById('birth2').value;
+            const time1 = document.getElementById('time1').value;
+            const time2 = document.getElementById('time2').value;
+
+            // 验证输入
+            if (!name1 || !name2 || !birth1 || !birth2) {
+                alert('请填写完整的姓名和出生日期信息');
+                return;
+            }
+
+            // 显示加载状态
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('resultSection').classList.remove('active');
+
+            // 模拟分析过程
+            await sleep(2000);
+
+            // 执行分析
+            const result = analyzer.analyze({
+                person1: { name: name1, birth: birth1, time: time1 },
+                person2: { name: name2, birth: birth2, time: time2 }
+            });
+
+            // 显示结果
+            displayResult(result);
+
+            // 隐藏加载，显示结果
+            document.getElementById('loading').classList.remove('active');
+            document.getElementById('resultSection').classList.add('active');
+
+            // 滚动到结果区域
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+        });
+
+        // 显示结果
+        function displayResult(result) {
+            // 绘制分数圆环
+            drawScoreCircle(result.score);
+
+            // 显示分数
+            document.getElementById('scoreNumber').textContent = result.score;
+
+            // 显示各维度分析
+            const aspectGrid = document.getElementById('aspectGrid');
+            aspectGrid.innerHTML = result.aspects.map(aspect => `
+                <div class="aspect-item fade-in-up">
+                    <div class="aspect-header">
+                        <div class="aspect-icon">${aspect.icon}</div>
+                        <div class="aspect-title">${aspect.title}</div>
+                    </div>
+                    <div class="aspect-content">${aspect.content}</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${aspect.score}%"></div>
+                    </div>
+                </div>
+            `).join('');
+
+            // 显示AI建议
+            document.getElementById('aiAdvice').innerHTML = result.advice;
+        }
+
+        // 绘制分数圆环
+        function drawScoreCircle(score) {
+            const canvas = document.getElementById('scoreCanvas');
+            const ctx = canvas.getContext('2d');
+            const centerX = 75;
+            const centerY = 75;
+            const radius = 60;
+            const lineWidth = 10;
+
+            ctx.clearRect(0, 0, 150, 150);
+
+            // 背景圆环
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+            ctx.lineWidth = lineWidth;
+            ctx.stroke();
+
+            // 进度圆环
+            const progress = (score / 100) * Math.PI * 2;
+            const gradient = ctx.createLinearGradient(0, 0, 150, 150);
+            gradient.addColorStop(0, '#FF6B9D');
+            gradient.addColorStop(1, '#6B4FE0');
+
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, radius, -Math.PI / 2, -Math.PI / 2 + progress);
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+        }
+
+        // 工具函数
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // 响应式
+        window.addEventListener('resize', () => {
+            starfield.resize();
+        });
+    </script>
+</body>
+</html>
